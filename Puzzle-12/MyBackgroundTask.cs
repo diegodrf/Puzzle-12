@@ -12,46 +12,16 @@ namespace Puzzle_12;
 /// Is there a better way to implement a background task in a Blazor Server app?
 /// 
 /// </summary>
-public class MyBackgroundTask
+public class MyBackgroundTask : IHostedService, IDisposable
 {
-    private CancellationTokenSource _cts = new CancellationTokenSource();
+    private Timer? _timer;
 
     public MyBackgroundTask()
     {
-        // Start the background work immediately upon instantiation.
-        Task.Run(() => DoWork(_cts.Token));
+        
     }
 
-    private async Task DoWork(CancellationToken cancellationToken)
-    {
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            try
-            {
-                // Perform the background task operation.
-                await ProcessDataAsync();
-
-                // Wait for a certain period before running again.
-                await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
-            }
-            catch (TaskCanceledException)
-            {
-                // Ignore the task cancellation.
-            }
-            catch (Exception ex)
-            {
-                // Exception handling logic (potentially incomplete or incorrect).
-                LogError(ex);
-            }
-        }
-    }
-
-    public void Stop()
-    {
-        _cts.Cancel();
-    }
-
-    private async Task ProcessDataAsync()
+    private void ProcessDataAsync(object? state)
     {
         // Processing logic goes here.
         Debug.WriteLine($"Processing Data at {DateTime.Now.ToLongTimeString()}");
@@ -60,6 +30,22 @@ public class MyBackgroundTask
     private void LogError(Exception ex)
     {
         // Log the error (implementation omitted for brevity)
+    }
+
+    public Task StartAsync(CancellationToken cancellationToken)
+    {
+        _timer = new Timer(ProcessDataAsync, null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
+        return Task.CompletedTask;
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
     }
 }
 
